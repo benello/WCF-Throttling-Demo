@@ -13,7 +13,7 @@ namespace ServiceTest
         public void LongProcess()
         {
             Console.WriteLine($"Process received for thread {Environment.CurrentManagedThreadId}");
-            Thread.Sleep(55000);
+            Thread.Sleep(1000);
         }
     }
 }

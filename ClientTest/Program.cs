@@ -1,41 +1,44 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ServiceModel;
-using System.Threading;
+using System.Threading.Tasks;
 using ServiceTest;
 
 namespace ClientTest
 {
     internal class Program
     {
+        private static readonly ChannelFactory<IService> channelFactory = new ChannelFactory<IService>("testEndpoint");
+
         public static void Main(string[] args)
         {
-            var channelFactory = new ChannelFactory<IService>("testEndpoint");
-            
-            var threads = new List<Thread>();
+            var tasks = new List<Task>();
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 5; i++)
             {
-                var thread = new Thread(() =>
-                {
-                    try
-                    {
-                        var client = channelFactory.CreateChannel();
-                        client.LongProcess();
-                        ((IClientChannel)client).Close();
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error: {ex.Message}");
-                        // swallow
-                    }
-                });
-                threads.Add(thread);
+                tasks.Add(new Task(ScheduleCalls));
+                tasks[i].Start();
             }
-            
-            threads.ForEach(thread => thread.Start());
 
-            threads.ForEach(thread => thread.Join());
+            Task.WaitAll(tasks.ToArray());
+        }
+
+        public static void ScheduleCalls()
+        {
+            Parallel.For(0, 10000, i =>
+            {
+                try
+                {
+                    var client = channelFactory.CreateChannel();
+                    client.LongProcess();
+                    ((IClientChannel)client).Close();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                    // swallow
+                }
+            });
         }
     }
 }
